@@ -42,6 +42,10 @@ void ULeapBlueprintFunctionLibrary::SetLeapPolicy(ELeapPolicyFlag Flag, bool Ena
 {
 	ILeapMotionPlugin::Get().SetLeapPolicy(Flag, Enable);
 }
+void ULeapBlueprintFunctionLibrary::RequestLeapPolicy()
+{
+	ILeapMotionPlugin::Get().RequestLeapPolicy();
+}
 void ULeapBlueprintFunctionLibrary::SetDebugTransform(const FTransform& TransformIn)
 {
 	DebugTransform = TransformIn;

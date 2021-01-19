@@ -19,15 +19,24 @@ FQuat FLeapUtility::LeapMountRotationOffset = FQuat(FRotator(0, 0, 0));
 
 FQuat FLeapUtility::FacingAdjustQuat = FQuat(FRotator(90.f, 0.f, 0.f));
 FQuat FLeapUtility::LeapRotationOffset = FQuat(FRotator(90.f, 0.f, 180.f));
-
+#pragma optimize("", off)
 //Todo: use and verify this for all values
 float LeapGetWorldScaleFactor()
 {
-	if (GEngine != nullptr && GEngine->GetWorld() != nullptr)
+	float Ret = 1.0f;
+	if (GEngine != nullptr)
 	{
-		return (GEngine->GetWorld()->GetWorldSettings()->WorldToMeters) / 100.f;
+		if (GEngine->GetWorldContexts().Num())
+		{
+			UWorld* World = GEngine->GetWorldContexts()[0].World();
+			if (World != nullptr)
+			{
+				float WorldToMeters = World->GetWorldSettings()->WorldToMeters;
+				Ret = WorldToMeters / 100.0f;
+			}
+		}
 	}
-	return 1.f;
+	return Ret;
 }
 
 
@@ -191,3 +200,4 @@ float FLeapUtility::ScaleUEToLeap(float UEFloat)
 {
 	return UEFloat * UE_TO_LEAP_SCALE;	//mm->cm
 }
+#pragma optimize("", on)

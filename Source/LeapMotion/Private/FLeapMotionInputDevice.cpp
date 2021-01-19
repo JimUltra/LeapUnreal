@@ -17,6 +17,7 @@ DECLARE_CYCLE_STAT(TEXT("Leap Game Input and Events"), STAT_LeapInputTick, STATG
 DECLARE_CYCLE_STAT(TEXT("Leap BodyState Tick"), STAT_LeapBodyStateTick, STATGROUP_LeapMotion);
 
 #pragma region Utility
+#pragma optimize("", off)
 //Function call Utility
 void FLeapMotionInputDevice::CallFunctionOnComponents(TFunction< void(ULeapComponent*)> InFunction)
 {
@@ -133,16 +134,13 @@ void FLeapMotionInputDevice::OnConnect()
 // comes from service message loop
 void FLeapMotionInputDevice::OnConnectionLost()
 {
-	FLeapAsync::RunShortLambdaOnGameThread([&]
-		{
+		UE_LOG(LeapMotionLog, Warning, TEXT("LeapService: OnConnectionLost."));
 
-			UE_LOG(LeapMotionLog, Warning, TEXT("LeapService: OnConnectionLost."));
-
-			CallFunctionOnComponents([&](ULeapComponent* Component)
-				{
-					Component->OnLeapServiceDisconnected.Broadcast();
-				});
-		});
+		CallFunctionOnComponents([&](ULeapComponent* Component)
+			{
+				Component->OnLeapServiceDisconnected.Broadcast();
+			});
+		
 }
 // already proxied onto game thread in wrapper
 void FLeapMotionInputDevice::OnDeviceFound(const LEAP_DEVICE_INFO *Props)
@@ -253,6 +251,11 @@ void FLeapMotionInputDevice::OnPolicy(const uint32_t CurrentPolicies)
 		UpdatedMode = ELeapMode::LEAP_MODE_VR;
 		Flags.Add(ELeapPolicyFlag::LEAP_POLICY_OPTIMIZE_HMD);
 	}
+	else
+	{
+		//JIM: this should get set to non VR here?
+		UpdatedMode = ELeapMode::LEAP_MODE_DESKTOP;
+	}
 	if (CurrentPolicies & eLeapPolicyFlag_AllowPauseResume)
 	{
 		Flags.Add(ELeapPolicyFlag::LEAP_POLICY_ALLOW_PAUSE_RESUME);
@@ -260,6 +263,12 @@ void FLeapMotionInputDevice::OnPolicy(const uint32_t CurrentPolicies)
 
 	Options.Mode = UpdatedMode;
 
+	UE_LOG(LeapMotionLog, Log, TEXT("LeapService: OnPolicy mode %s."), *UEnum::GetValueAsString(UpdatedMode));
+	
+	for (int i = 0; i < Flags.Num(); ++i)
+	{
+		UE_LOG(LeapMotionLog, Log, TEXT("LeapService: OnPolicy flag %d = %s."), i, *UEnum::GetValueAsString(Flags[i]));
+	}
 	//Update mode for each component and broadcast current policies
 	CallFunctionOnComponents([&, UpdatedMode, Flags](ULeapComponent* Component)
 	{
@@ -957,6 +966,7 @@ void FLeapMotionInputDevice::LatestFrame(FLeapFrameData& OutFrame)
 //Policies
 void FLeapMotionInputDevice::SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable)
 {
+	UE_LOG(LeapMotionLog, Log, TEXT("LeapService: SetLeapPolicy %s %d."), *UEnum::GetValueAsString(Flag), Enable);
 	switch (Flag)
 	{
 	case LEAP_POLICY_BACKGROUND_FRAMES:
@@ -976,6 +986,11 @@ void FLeapMotionInputDevice::SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable)
 	default:
 		break;
 	}
+}
+void FLeapMotionInputDevice::RequestLeapPolicy()
+{
+	// there's no getter for policy, setting nop flags will result in the existing policy being sent to the OnPolicy() callback
+	Leap.SetPolicy(0, 0);
 }
 
 #pragma endregion Leap Input Device
@@ -1162,12 +1177,16 @@ void FLeapMotionInputDevice::SetOptions(const FLeapOptions& InOptions)
 		HMDType = GEngine->XRSystem->GetSystemName();
 	}
 
-	//Did we change the mode?
+	// removed the optimisation here as the state of Leap itself is unknown at startup
+	// so we must set it here regardless of the state in the plugin
+	// why was this optimised out?
 	if (Options.Mode != InOptions.Mode)
 	{
 		bool bOptimizeForHMd = InOptions.Mode == ELeapMode::LEAP_MODE_VR;
+		
 		SetLeapPolicy(LEAP_POLICY_OPTIMIZE_HMD, bOptimizeForHMd);
 	}
+	
 
 	//Set main options
 	Options = InOptions;
@@ -1369,4 +1388,6 @@ FLeapStats FLeapMotionInputDevice::GetStats()
 {
 	return Stats;
 }
+
+#pragma optimize("", on)
 #pragma endregion Leap Input Device

@@ -69,6 +69,8 @@ public:
 
 	//Policy and toggles
 	void SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable);
+	// Trigger a policy event by setting no flags. There is no getter for the current policy so this is how to obtain the device policy state
+	void RequestLeapPolicy();
 
 	//BodyState
 	virtual void UpdateInput(int32 DeviceID, class UBodyStateSkeleton* Skeleton) override;
@@ -206,4 +208,8 @@ private:
 	void SetBSFingerFromLeapDigit(class UBodyStateFinger* Finger, const FLeapDigitData& LeapDigit);
 	void SetBSThumbFromLeapThumb(class UBodyStateFinger* Finger, const FLeapDigitData& LeapDigit);
 	void SetBSHandFromLeapHand(class UBodyStateHand* Hand, const FLeapHandData& LeapHand);
+
+	// helpers
+
+	
 };

@@ -6,7 +6,7 @@
 #include "Runtime/Core/Public/Misc/Timespan.h"
 
 #pragma region LeapC Wrapper
-
+#pragma optimize("", off)
 //Static callback delegate pointer initialization
 LeapWrapperCallbackInterface* FLeapWrapper::CallbackDelegate = nullptr;
 
@@ -328,7 +328,7 @@ void FLeapWrapper::HandleDeviceEvent(const LEAP_DEVICE_EVENT* DeviceEvent)
 
 	if (CallbackDelegate)
 	{
-		TaskRefDeviceFound = FLeapAsync::RunShortLambdaOnGameThread([DeviceEvent, DeviceProperties, this]
+		TaskRefDeviceFound = FLeapAsync::RunShortLambdaOnGameThread([DeviceProperties, this]
 			{
 				if (CallbackDelegate)
 				{
@@ -351,7 +351,7 @@ void FLeapWrapper::HandleDeviceLostEvent(const LEAP_DEVICE_EVENT* DeviceEvent) {
 
 	if (CallbackDelegate)
 	{
-		TaskRefDeviceLost = FLeapAsync::RunShortLambdaOnGameThread([DeviceEvent, this]
+		TaskRefDeviceLost = FLeapAsync::RunShortLambdaOnGameThread([this]
 			{
 				if (CallbackDelegate)
 				{
@@ -366,18 +366,20 @@ void FLeapWrapper::HandleDeviceFailureEvent(const LEAP_DEVICE_FAILURE_EVENT* Dev
 {
 	if (CallbackDelegate)
 	{
-		TaskRefDeviceFailure = FLeapAsync::RunShortLambdaOnGameThread([DeviceFailureEvent, this]
+		LEAP_DEVICE_FAILURE_EVENT Event = *DeviceFailureEvent;
+		TaskRefDeviceFailure = FLeapAsync::RunShortLambdaOnGameThread([Event, this]
 			{
 				if (CallbackDelegate)
 				{
-					CallbackDelegate->OnDeviceFailure(DeviceFailureEvent->status, DeviceFailureEvent->hDevice);
+					CallbackDelegate->OnDeviceFailure(Event.status, Event.hDevice);
 				}
 			});
 	}
 }
 
 /** Called by ServiceMessageLoop() when a tracking event is returned by LeapPollConnection(). */
-void FLeapWrapper::HandleTrackingEvent(const LEAP_TRACKING_EVENT* TrackingEvent) {
+void FLeapWrapper::HandleTrackingEvent(const LEAP_TRACKING_EVENT* TrackingEvent)
+{
 	//temp disable
 	/*if (DeviceId == 2) {
 		return;
@@ -423,15 +425,31 @@ void FLeapWrapper::HandleLogEvent(const LEAP_LOG_EVENT* LogEvent)
 /** Called by ServiceMessageLoop() when a policy event is returned by LeapPollConnection(). */
 void FLeapWrapper::HandlePolicyEvent(const LEAP_POLICY_EVENT* PolicyEvent)
 {
+
 	if (CallbackDelegate)
-	{
-		TaskRefPolicy = FLeapAsync::RunShortLambdaOnGameThread([PolicyEvent, this]
-			{
-				if (CallbackDelegate)
+	{ 
+		if (FixAsyncNotify)
+		{
+			const uint32_t CurrentPolicy = PolicyEvent->current_policy;
+			TaskRefPolicy = FLeapAsync::RunShortLambdaOnGameThread([CurrentPolicy, this]
 				{
-					CallbackDelegate->OnPolicy(PolicyEvent->current_policy);
-				}
-			});
+					if (CallbackDelegate)
+					{
+						CallbackDelegate->OnPolicy(CurrentPolicy);
+					}
+				});
+		}
+		else
+		{
+
+			TaskRefPolicy = FLeapAsync::RunShortLambdaOnGameThread([PolicyEvent, this]
+				{
+					if (CallbackDelegate)
+					{
+						CallbackDelegate->OnPolicy(PolicyEvent->current_policy);
+					}
+				});
+		}
 	}
 }
 
@@ -440,11 +458,12 @@ void FLeapWrapper::HandleConfigChangeEvent(const LEAP_CONFIG_CHANGE_EVENT* Confi
 {
 	if (CallbackDelegate)
 	{
-		TaskRefConfigChange = FLeapAsync::RunShortLambdaOnGameThread([ConfigChangeEvent, this]
+		LEAP_CONFIG_CHANGE_EVENT ConfigChange = *ConfigChangeEvent;
+		TaskRefConfigChange = FLeapAsync::RunShortLambdaOnGameThread([ConfigChange, this]
 			{
 				if (CallbackDelegate)
 				{
-					CallbackDelegate->OnConfigChange(ConfigChangeEvent->requestID, ConfigChangeEvent->status);
+					CallbackDelegate->OnConfigChange(ConfigChange.requestID, ConfigChange.status);
 				}
 			});
 	}
@@ -455,11 +474,15 @@ void FLeapWrapper::HandleConfigResponseEvent(const LEAP_CONFIG_RESPONSE_EVENT* C
 {
 	if (CallbackDelegate)
 	{
-		TaskRefConfigResponse = FLeapAsync::RunShortLambdaOnGameThread([ConfigResponseEvent, this]
+		// this isn't thread safe, the message loop continues during the below, so the event could be overwritten
+		// by the time the callback below is handled. The callback isn't doing anything right now
+		// but the correct implementation is to deep copy the config response event including any referenced strings in the variant
+		// and send this instaed.
+		TaskRefConfigResponse = FLeapAsync::RunShortLambdaOnGameThread([/*ConfigResponseEvent,*/ this]
 			{
 				if (CallbackDelegate)
 				{
-					CallbackDelegate->OnConfigResponse(ConfigResponseEvent->requestID, ConfigResponseEvent->value);
+					//CallbackDelegate->OnConfigResponse(ConfigResponseEvent->requestID, ConfigResponseEvent->value);
 				}
 			});
 	}
@@ -499,7 +522,7 @@ void FLeapWrapper::ServiceMessageLoop(void* Unused)
 				continue;
 			}
 		}
-
+		//Top:
 		switch (Msg.type)
 		{
 		case eLeapEventType_Connection:
@@ -527,7 +550,18 @@ void FLeapWrapper::ServiceMessageLoop(void* Unused)
 			HandleLogEvent(Msg.log_event);
 			break;
 		case eLeapEventType_Policy:
+			
+			
+			// JIM: this is really odd
+			// when the policy message is received, it's contents are zeroed
+			// they are only filled by a subsequent call to LeapPollConnection
+			// the next call will change the message type to tracking
+			if (FixAsyncNotify)
+			{
+				LeapPollConnection(Handle, Timeout, &Msg);
+			}
 			HandlePolicyEvent(Msg.policy_event);
+		//	goto Top;
 			break;
 		case eLeapEventType_ConfigChange:
 			HandleConfigChangeEvent(Msg.config_change_event);
@@ -542,5 +576,5 @@ void FLeapWrapper::ServiceMessageLoop(void* Unused)
 		} //switch on msg.type
 	}//end while running
 }
-
+#pragma optimize("", on)
 #pragma endregion LeapC Wrapper

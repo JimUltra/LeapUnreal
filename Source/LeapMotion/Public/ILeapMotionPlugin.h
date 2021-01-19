@@ -61,7 +61,11 @@ public:
 
 	/** Set a Leap Policy, such as image streaming or optimization type*/
 	virtual void SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable) = 0;
+	
+	/** Request the Leap Policy, such as image streaming or optimization type, this will be returned asynchronously in a notification*/
+	virtual void RequestLeapPolicy() = 0;
 
+	
 	/** Force shutdown leap, do not call unless you have a very specfic need*/
 	virtual void ShutdownLeap() = 0;
 };

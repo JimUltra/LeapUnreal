@@ -125,7 +125,13 @@ void FLeapMotionPlugin::SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable)
 		LeapInputDevice->SetLeapPolicy(Flag, Enable);
 	}
 }
-
+void FLeapMotionPlugin::RequestLeapPolicy()
+{
+	if (bActive)
+	{
+		LeapInputDevice->RequestLeapPolicy();
+	}
+}
 void FLeapMotionPlugin::ShutdownLeap()
 {
 	if (bActive)

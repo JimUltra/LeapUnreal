@@ -34,6 +34,11 @@ class ULeapBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 	UFUNCTION(BlueprintCallable, Category = "Leap Motion Functions")
 	static void SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable);
 
+	/** Request leap policy, note this comes back as a notification asynchronously */
+	UFUNCTION(BlueprintCallable, Category = "Leap Motion Functions")
+	static void RequestLeapPolicy();
+
+
 	/** Debug test */
 	UFUNCTION(BlueprintCallable, Category = "Leap Motion Functions")
 	static void SetDebugTransform(const FTransform& DebugTransform);
