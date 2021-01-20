@@ -1177,9 +1177,8 @@ void FLeapMotionInputDevice::SetOptions(const FLeapOptions& InOptions, bool IsFr
 		HMDType = GEngine->XRSystem->GetSystemName();
 	}
 
-	// removed the optimisation here as the state of Leap itself is unknown at startup
-	// so we must set it here regardless of the state in the plugin
-	// why was this optimised out?
+	// The state of Leap itself is unknown at startup
+	// so we must set it here regardless of the state in the plugin on first run
 	if (Options.Mode != InOptions.Mode || IsFromInit)
 	{
 		bool bOptimizeForHMd = InOptions.Mode == ELeapMode::LEAP_MODE_VR;
