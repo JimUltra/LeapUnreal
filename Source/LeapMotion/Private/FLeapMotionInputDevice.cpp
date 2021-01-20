@@ -123,7 +123,7 @@ void FLeapMotionInputDevice::OnConnect()
 				DefaultOptions.Mode = ELeapMode::LEAP_MODE_DESKTOP;
 			}
 
-			SetOptions(DefaultOptions);
+			SetOptions(DefaultOptions, true);
 
 			CallFunctionOnComponents([&](ULeapComponent* Component)
 				{
@@ -1170,7 +1170,7 @@ void FLeapMotionInputDevice::PreRenderViewFamily_RenderThread(FRHICommandListImm
 	ParseEvents();
 }
 
-void FLeapMotionInputDevice::SetOptions(const FLeapOptions& InOptions)
+void FLeapMotionInputDevice::SetOptions(const FLeapOptions& InOptions, bool IsFromInit /* = false */)
 {
 	if (GEngine && GEngine->XRSystem.IsValid())
 	{
@@ -1180,7 +1180,7 @@ void FLeapMotionInputDevice::SetOptions(const FLeapOptions& InOptions)
 	// removed the optimisation here as the state of Leap itself is unknown at startup
 	// so we must set it here regardless of the state in the plugin
 	// why was this optimised out?
-	if (Options.Mode != InOptions.Mode)
+	if (Options.Mode != InOptions.Mode || IsFromInit)
 	{
 		bool bOptimizeForHMd = InOptions.Mode == ELeapMode::LEAP_MODE_VR;
 		

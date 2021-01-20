@@ -86,7 +86,7 @@ public:
 	virtual void PreRenderViewFamily_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& InViewFamily) override;
 	virtual int32 GetPriority() const override { return -10; }
 
-	void SetOptions(const FLeapOptions& Options);
+	void SetOptions(const FLeapOptions& Options, const bool IsFromInit = false);
 	FLeapOptions GetOptions();
 	FLeapStats GetStats();
 
