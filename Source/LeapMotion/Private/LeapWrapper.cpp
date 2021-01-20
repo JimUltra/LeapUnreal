@@ -477,7 +477,7 @@ void FLeapWrapper::HandleConfigResponseEvent(const LEAP_CONFIG_RESPONSE_EVENT* C
 		// this isn't thread safe, the message loop continues during the below, so the event could be overwritten
 		// by the time the callback below is handled. The callback isn't doing anything right now
 		// but the correct implementation is to deep copy the config response event including any referenced strings in the variant
-		// and send this instaed.
+		// and send this instead.
 		TaskRefConfigResponse = FLeapAsync::RunShortLambdaOnGameThread([/*ConfigResponseEvent,*/ this]
 			{
 				if (CallbackDelegate)

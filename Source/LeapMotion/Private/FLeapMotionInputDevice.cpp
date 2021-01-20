@@ -989,7 +989,7 @@ void FLeapMotionInputDevice::SetLeapPolicy(ELeapPolicyFlag Flag, bool Enable)
 }
 void FLeapMotionInputDevice::RequestLeapPolicy()
 {
-	// there's no getter for policy, setting nop flags will result in the existing policy being sent to the OnPolicy() callback
+	// there's no getter for policy, setting no flags will result in the existing policy being sent to the OnPolicy() callback
 	Leap.SetPolicy(0, 0);
 }
 
