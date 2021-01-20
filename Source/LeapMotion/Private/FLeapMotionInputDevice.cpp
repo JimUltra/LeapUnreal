@@ -1179,7 +1179,7 @@ void FLeapMotionInputDevice::SetOptions(const FLeapOptions& InOptions, bool IsFr
 
 	// The state of Leap itself is unknown at startup
 	// so we must set it here regardless of the state in the plugin on first run
-	if (Options.Mode != InOptions.Mode || IsFromInit)
+	//if (Options.Mode != InOptions.Mode || IsFromInit)
 	{
 		bool bOptimizeForHMd = InOptions.Mode == ELeapMode::LEAP_MODE_VR;
 		

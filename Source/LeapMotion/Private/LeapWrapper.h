@@ -121,5 +121,5 @@ private:
 	void HandleConfigChangeEvent(const LEAP_CONFIG_CHANGE_EVENT *ConfigChangeEvent);
 	void HandleConfigResponseEvent(const LEAP_CONFIG_RESPONSE_EVENT *ConfigResponseEvent);
 
-	static const bool FixAsyncNotify = true;
+	static const bool FixAsyncNotify = false;
 };
