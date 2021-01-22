@@ -442,7 +442,7 @@ void FLeapWrapper::HandlePolicyEvent(const LEAP_POLICY_EVENT* PolicyEvent)
 					CallbackDelegate->OnPolicy(CurrentPolicy);
 				}
 			});
-}
+	}
 }
 
 /** Called by ServiceMessageLoop() when a config change event is returned by LeapPollConnection(). */
