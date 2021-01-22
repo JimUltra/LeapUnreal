@@ -101,7 +101,11 @@ void FLeapWrapper::CloseConnection()
 
 void FLeapWrapper::SetPolicy(int64 Flags, int64 ClearFlags)
 {
-	LeapSetPolicyFlags(ConnectionHandle, Flags, ClearFlags);
+	eLeapRS Result  = LeapSetPolicyFlags(ConnectionHandle, Flags, ClearFlags);
+	if (Result != eLeapRS_Success)
+	{
+		UE_LOG(LeapMotionLog, Log, TEXT("LeapSetPolicyFlags failed in  FLeapWrapper::SetPolicy."));
+	}
 }
 
 void FLeapWrapper::SetPolicyFlagFromBoolean(eLeapPolicyFlag Flag, bool ShouldSet)
@@ -428,29 +432,17 @@ void FLeapWrapper::HandlePolicyEvent(const LEAP_POLICY_EVENT* PolicyEvent)
 
 	if (CallbackDelegate)
 	{ 
-		if (FixAsyncNotify)
-		{
-			const uint32_t CurrentPolicy = PolicyEvent->current_policy;
-			TaskRefPolicy = FLeapAsync::RunShortLambdaOnGameThread([CurrentPolicy, this]
+		// this is always coming back as 0, this means either the Leap service refused to set any flags?
+		// or there's a bug in the policy notification system with Leap Motion V4.
+		const uint32_t CurrentPolicy = PolicyEvent->current_policy;
+		TaskRefPolicy = FLeapAsync::RunShortLambdaOnGameThread([CurrentPolicy, this]
+			{
+				if (CallbackDelegate)
 				{
-					if (CallbackDelegate)
-					{
-						CallbackDelegate->OnPolicy(CurrentPolicy);
-					}
-				});
-		}
-		else
-		{
-
-			TaskRefPolicy = FLeapAsync::RunShortLambdaOnGameThread([PolicyEvent, this]
-				{
-					if (CallbackDelegate)
-					{
-						CallbackDelegate->OnPolicy(PolicyEvent->current_policy);
-					}
-				});
-		}
-	}
+					CallbackDelegate->OnPolicy(CurrentPolicy);
+				}
+			});
+}
 }
 
 /** Called by ServiceMessageLoop() when a config change event is returned by LeapPollConnection(). */
@@ -522,7 +514,7 @@ void FLeapWrapper::ServiceMessageLoop(void* Unused)
 				continue;
 			}
 		}
-		//Top:
+		
 		switch (Msg.type)
 		{
 		case eLeapEventType_Connection:
@@ -550,18 +542,7 @@ void FLeapWrapper::ServiceMessageLoop(void* Unused)
 			HandleLogEvent(Msg.log_event);
 			break;
 		case eLeapEventType_Policy:
-			
-			
-			// JIM: this is really odd
-			// when the policy message is received, it's contents are zeroed
-			// they are only filled by a subsequent call to LeapPollConnection
-			// the next call will change the message type to tracking
-			if (FixAsyncNotify)
-			{
-				LeapPollConnection(Handle, Timeout, &Msg);
-			}
 			HandlePolicyEvent(Msg.policy_event);
-		//	goto Top;
 			break;
 		case eLeapEventType_ConfigChange:
 			HandleConfigChangeEvent(Msg.config_change_event);

@@ -120,6 +120,4 @@ private:
 	void HandlePolicyEvent(const LEAP_POLICY_EVENT *PolicyEvent);
 	void HandleConfigChangeEvent(const LEAP_CONFIG_CHANGE_EVENT *ConfigChangeEvent);
 	void HandleConfigResponseEvent(const LEAP_CONFIG_RESPONSE_EVENT *ConfigResponseEvent);
-
-	static const bool FixAsyncNotify = false;
 };
